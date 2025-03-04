@@ -1,12 +1,13 @@
 
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
-import { Search, Filter, ArrowDown, ArrowUp } from 'lucide-react';
+import { Search, Filter, ArrowDown, ArrowUp, PieChart } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TransactionCard, { Transaction } from '@/components/ui/TransactionCard';
 import FadeIn from '@/components/animations/FadeIn';
 import AddTransactionDialog from '@/components/transactions/AddTransactionDialog';
+import TransactionSummary from '@/components/transactions/TransactionSummary';
 
 // Mock data - expanded transactions list
 const allTransactions: Transaction[] = [
@@ -88,6 +89,7 @@ const Transactions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>(allTransactions);
+  const [showSummary, setShowSummary] = useState(false);
   
   // Scroll to top on page load
   useEffect(() => {
@@ -108,6 +110,18 @@ const Transactions = () => {
     return matchesSearch && matchesType;
   });
 
+  // Calculate summary statistics
+  const summary = {
+    totalIncome: transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0),
+    totalExpenses: transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0),
+    balance: transactions
+      .reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0)
+  };
+
   return (
     <>
       <Helmet>
@@ -123,8 +137,27 @@ const Transactions = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
               <h1 className="text-3xl font-bold mb-4 sm:mb-0">Transactions</h1>
               
-              <AddTransactionDialog onAddTransaction={handleAddTransaction} />
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setShowSummary(!showSummary)}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-secondary text-foreground rounded-full shadow-soft hover:bg-secondary/80 transition-colors mr-2"
+                >
+                  <PieChart className="h-4 w-4 mr-2" />
+                  {showSummary ? 'Hide Summary' : 'Show Summary'}
+                </button>
+                <AddTransactionDialog onAddTransaction={handleAddTransaction} />
+              </div>
             </div>
+            
+            {showSummary && (
+              <FadeIn direction="up">
+                <TransactionSummary 
+                  totalIncome={summary.totalIncome}
+                  totalExpenses={summary.totalExpenses}
+                  balance={summary.balance}
+                />
+              </FadeIn>
+            )}
             
             <FadeIn>
               <div className="bg-white rounded-xl shadow-soft border border-border/30 p-4 mb-8">
