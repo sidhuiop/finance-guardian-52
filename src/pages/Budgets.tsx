@@ -1,11 +1,11 @@
-
 import { Helmet } from 'react-helmet';
-import { useEffect } from 'react';
-import { Plus, Home, ShoppingCart, Utensils, CreditCard, PiggyBank, Briefcase, Heart, Plane } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Home, ShoppingCart, Utensils, CreditCard, PiggyBank, Briefcase, Heart, Plane, Plus } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/animations/FadeIn';
 import { cn } from '@/lib/utils';
+import AddBudgetDialog from '@/components/budgets/AddBudgetDialog';
 
 type Budget = {
   id: string;
@@ -17,8 +17,20 @@ type Budget = {
   color: string;
 };
 
+// Icon mapping for dynamic rendering
+const iconMap: Record<string, any> = {
+  'Home': Home,
+  'ShoppingCart': ShoppingCart,
+  'Utensils': Utensils,
+  'CreditCard': CreditCard,
+  'PiggyBank': PiggyBank,
+  'Briefcase': Briefcase,
+  'Heart': Heart,
+  'Plane': Plane,
+};
+
 // Mock data
-const budgets: Budget[] = [
+const initialBudgets: Budget[] = [
   {
     id: '1',
     name: 'Housing',
@@ -94,10 +106,23 @@ const budgets: Budget[] = [
 ];
 
 const Budgets = () => {
+  const [budgets, setBudgets] = useState<Budget[]>(initialBudgets);
+  
+  // Calculate totals
+  const totalBudget = budgets.reduce((sum, budget) => sum + budget.allocated, 0);
+  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0);
+  const totalRemaining = totalBudget - totalSpent;
+  const spentPercentage = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Add a new budget
+  const handleAddBudget = (newBudget: Budget) => {
+    setBudgets([...budgets, newBudget]);
+  };
 
   return (
     <>
@@ -114,10 +139,7 @@ const Budgets = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
               <h1 className="text-3xl font-bold mb-4 sm:mb-0">Monthly Budgets</h1>
               
-              <button className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-full shadow-soft hover:bg-primary/90 transition-colors">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Budget
-              </button>
+              <AddBudgetDialog onAddBudget={handleAddBudget} />
             </div>
             
             <FadeIn>
@@ -125,17 +147,17 @@ const Budgets = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-primary/10 rounded-lg p-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Budget</h3>
-                    <p className="text-2xl font-semibold">$4,050.00</p>
+                    <p className="text-2xl font-semibold">${totalBudget.toFixed(2)}</p>
                   </div>
                   
                   <div className="bg-green-500/10 rounded-lg p-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Spent So Far</h3>
-                    <p className="text-2xl font-semibold">$2,950.00</p>
+                    <p className="text-2xl font-semibold">${totalSpent.toFixed(2)}</p>
                   </div>
                   
                   <div className="bg-blue-500/10 rounded-lg p-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Remaining</h3>
-                    <p className="text-2xl font-semibold">$1,100.00</p>
+                    <p className="text-2xl font-semibold">${totalRemaining.toFixed(2)}</p>
                   </div>
                 </div>
                 
@@ -143,12 +165,12 @@ const Budgets = () => {
                   <div className="relative h-4 bg-secondary/50 rounded-full overflow-hidden">
                     <div 
                       className="absolute top-0 left-0 h-full bg-primary rounded-full"
-                      style={{ width: `${(2950 / 4050) * 100}%` }}
+                      style={{ width: `${spentPercentage}%` }}
                     ></div>
                   </div>
                   
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm text-muted-foreground">73% spent</span>
+                    <span className="text-sm text-muted-foreground">{spentPercentage}% spent</span>
                     <span className="text-sm text-muted-foreground">12 days left</span>
                   </div>
                 </div>
@@ -157,7 +179,8 @@ const Budgets = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {budgets.map((budget, index) => {
-                const Icon = budget.icon;
+                // Dynamic icon selection based on budget.icon value
+                const Icon = iconMap[budget.icon as keyof typeof iconMap] || Home;
                 const percentage = Math.round((budget.spent / budget.allocated) * 100);
                 const isWarning = percentage >= 75 && percentage < 90;
                 const isOverBudget = percentage >= 90;
@@ -208,7 +231,7 @@ const Budgets = () => {
               })}
               
               <FadeIn direction="up" delay={budgets.length * 50}>
-                <div className="bg-secondary/50 rounded-xl border border-dashed border-border/60 p-5 flex flex-col items-center justify-center min-h-[220px] hover:bg-secondary/70 transition-colors cursor-pointer">
+                <div onClick={() => document.querySelector<HTMLButtonElement>('[data-dialog-trigger="add-budget"]')?.click()} className="bg-secondary/50 rounded-xl border border-dashed border-border/60 p-5 flex flex-col items-center justify-center min-h-[220px] hover:bg-secondary/70 transition-colors cursor-pointer">
                   <div className="p-3 rounded-full bg-primary/10 mb-3">
                     <Plus className="h-6 w-6 text-primary" />
                   </div>

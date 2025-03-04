@@ -1,12 +1,12 @@
 
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
-import { Search, Filter, Plus, ArrowDown, ArrowUp } from 'lucide-react';
+import { Search, Filter, ArrowDown, ArrowUp } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TransactionCard, { Transaction } from '@/components/ui/TransactionCard';
-import CategoryBadge from '@/components/ui/CategoryBadge';
 import FadeIn from '@/components/animations/FadeIn';
+import AddTransactionDialog from '@/components/transactions/AddTransactionDialog';
 
 // Mock data - expanded transactions list
 const allTransactions: Transaction[] = [
@@ -87,14 +87,20 @@ const allTransactions: Transaction[] = [
 const Transactions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>(allTransactions);
   
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
   
+  // Add a new transaction
+  const handleAddTransaction = (newTransaction: Transaction) => {
+    setTransactions([newTransaction, ...transactions]);
+  };
+  
   // Filter transactions based on search and type filter
-  const filteredTransactions = allTransactions.filter(transaction => {
+  const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === null || transaction.type === selectedType;
@@ -117,10 +123,7 @@ const Transactions = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
               <h1 className="text-3xl font-bold mb-4 sm:mb-0">Transactions</h1>
               
-              <button className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-full shadow-soft hover:bg-primary/90 transition-colors">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Transaction
-              </button>
+              <AddTransactionDialog onAddTransaction={handleAddTransaction} />
             </div>
             
             <FadeIn>
